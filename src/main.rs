@@ -1,20 +1,15 @@
 use crossterm::event;
 use std::process::{Command, Stdio};
 
+mod ui;
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let certificate_chain = fetch_certificate("www.example.com")?;
-    ratatui::run(|mut terminal| {
-        loop {
-            terminal.draw(render)?;
-            if event::read()?.is_key_press() {
-                break Ok(());
-            }
-        }
-    })
-}
 
-fn render(frame: &mut ratatui::Frame) {
-    frame.render_widget("TLS certificate", frame.area());
+    let ui = ui::Ui::new();
+    let _ = ui.run();
+
+    Ok(())
 }
 
 fn fetch_certificate(url: &str) -> Result<String, Box<dyn std::error::Error>> {
