@@ -1,4 +1,3 @@
-use crossterm::event;
 use std::process::{Command, Stdio};
 
 mod ui;
@@ -6,7 +5,7 @@ mod ui;
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let certificate_chain = fetch_certificate("www.example.com")?;
 
-    let ui = ui::Ui::new();
+    let ui = ui::Ui::new(certificate_chain);
     let _ = ui.run();
 
     Ok(())

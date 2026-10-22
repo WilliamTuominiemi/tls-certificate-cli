@@ -1,3 +1,4 @@
+use ratatui::widgets::{Block, Paragraph};
 use ratatui::{
     DefaultTerminal, Frame,
     crossterm::event::{self, KeyCode},
@@ -6,11 +7,15 @@ use std::io;
 
 pub struct Ui {
     should_quit: bool,
+    certificates: String,
 }
 
 impl Ui {
-    pub fn new() -> Self {
-        Self { should_quit: false }
+    pub fn new(certificates: String) -> Self {
+        Self {
+            should_quit: false,
+            certificates,
+        }
     }
 
     pub fn run(mut self) -> io::Result<()> {
@@ -26,7 +31,11 @@ impl Ui {
     }
 
     fn render(&self, frame: &mut Frame) {
-        frame.render_widget("TLS certificate", frame.area());
+        let block = Block::bordered().title("TLS certificate");
+        let inner = block.inner(frame.area());
+
+        frame.render_widget(block, frame.area());
+        frame.render_widget(Paragraph::new(self.certificates.clone()), inner);
     }
 
     fn handle_events(&mut self) -> io::Result<()> {
