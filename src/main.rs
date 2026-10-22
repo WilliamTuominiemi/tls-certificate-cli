@@ -6,7 +6,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let certificate_chain = fetch_certificate("www.example.com")?;
     let split_certificate_chain = certificate_chain_to_individual_certificates(&certificate_chain);
 
-    let ui = ui::Ui::new(certificate_chain);
+    let ui = ui::Ui::new(split_certificate_chain);
     let _ = ui.run();
 
     Ok(())
