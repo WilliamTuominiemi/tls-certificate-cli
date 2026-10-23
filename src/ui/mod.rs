@@ -1,5 +1,5 @@
-use ratatui::layout::{Offset, Rect};
-use ratatui::widgets::{Block, Paragraph, Tabs};
+use ratatui::layout::{Margin, Offset, Rect};
+use ratatui::widgets::{Block, Paragraph, Scrollbar, ScrollbarOrientation, ScrollbarState, Tabs};
 use ratatui::{
     DefaultTerminal, Frame,
     crossterm::event::{self, KeyCode},
@@ -11,6 +11,7 @@ pub struct Ui {
     selected_tab: usize,
     cert_amount: usize,
     certificates: Vec<String>,
+    scrollbar_state: ScrollbarState,
 }
 
 impl Ui {
@@ -20,6 +21,7 @@ impl Ui {
             selected_tab: 0,
             cert_amount: certificates.len(),
             certificates,
+            scrollbar_state: ScrollbarState::new(100),
         }
     }
 
@@ -35,9 +37,10 @@ impl Ui {
         Ok(())
     }
 
-    fn render(&self, frame: &mut Frame) {
+    fn render(&mut self, frame: &mut Frame) {
         self.render_content(frame, frame.area());
         self.render_tabs(frame, frame.area() + Offset::new(1, 0));
+        self.render_vertical_scrollbar(frame, frame.area());
     }
 
     fn handle_events(&mut self) -> io::Result<()> {
@@ -49,6 +52,8 @@ impl Ui {
                     self.selected_tab =
                         (self.selected_tab + self.cert_amount - 1) % self.cert_amount
                 }
+                KeyCode::Up => self.scrollbar_state.prev(),
+                KeyCode::Down => self.scrollbar_state.next(),
                 _ => {}
             }
         }
@@ -65,6 +70,21 @@ impl Ui {
     fn render_content(&self, frame: &mut Frame, area: Rect) {
         let text = self.certificates[self.selected_tab as usize].clone();
         let block = Paragraph::new(text).block(Block::bordered());
-        frame.render_widget(block, area);
+        frame.render_widget(
+            block.scroll((self.scrollbar_state.get_position() as u16, 0)),
+            area,
+        );
+    }
+
+    fn render_vertical_scrollbar(&mut self, frame: &mut Frame, area: Rect) {
+        let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight);
+        frame.render_stateful_widget(
+            scrollbar,
+            area.inner(Margin {
+                vertical: 1,
+                horizontal: 0,
+            }),
+            &mut self.scrollbar_state,
+        );
     }
 }
