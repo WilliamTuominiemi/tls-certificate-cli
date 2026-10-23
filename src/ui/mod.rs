@@ -1,5 +1,8 @@
 use ratatui::layout::{Margin, Offset, Rect};
-use ratatui::widgets::{Block, Paragraph, Scrollbar, ScrollbarOrientation, ScrollbarState, Tabs};
+use ratatui::style::Style;
+use ratatui::widgets::{
+    Block, BorderType, Padding, Paragraph, Scrollbar, ScrollbarOrientation, ScrollbarState, Tabs,
+};
 use ratatui::{
     DefaultTerminal, Frame,
     crossterm::event::{self, KeyCode},
@@ -92,7 +95,12 @@ impl Ui {
 
     fn render_content(&self, frame: &mut Frame, area: Rect) {
         let text = self.certificates[self.selected_tab as usize].clone();
-        let block = Paragraph::new(text).block(Block::bordered());
+        let block = Paragraph::new(text).block(
+            Block::bordered()
+                .border_type(BorderType::Rounded)
+                .padding(Padding::horizontal(1))
+                .border_style(Style::new().light_magenta()),
+        );
         frame.render_widget(
             block.scroll((self.scrollbar_state.get_position() as u16, 0)),
             area,
