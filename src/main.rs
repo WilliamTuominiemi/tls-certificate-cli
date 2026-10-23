@@ -36,11 +36,11 @@ fn certificate_chain_to_individual_certificates(certificate_chain: &String) -> V
 
         if let Some(end_index) = certificate_chain.find("Server certificate") {
             let certificate_chain_start_and_end_trimmed =
-                &certificate_chain_start_trimmed[0..end_index];
+                &certificate_chain_start_trimmed[18..end_index];
 
             let mut split_certificate_chain: Vec<String> = certificate_chain_start_and_end_trimmed
                 .split("END CERTIFICATE")
-                .map(|s| s.to_string())
+                .map(|s| s.strip_prefix("-----\n").unwrap_or(s).to_string())
                 .collect();
 
             split_certificate_chain.truncate(split_certificate_chain.len() - 1);
