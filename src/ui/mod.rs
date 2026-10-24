@@ -1,6 +1,6 @@
 use ratatui::layout::{Constraint, Margin, Offset, Rect};
 use ratatui::style::Style;
-use ratatui::text::{Line, Text};
+use ratatui::text::Line;
 use ratatui::widgets::{
     Block, BorderType, Clear, Padding, Paragraph, Scrollbar, ScrollbarOrientation, ScrollbarState,
     Tabs, Wrap,
@@ -22,11 +22,11 @@ pub struct Ui {
     max_scroll: usize,
     scrollbar_state: ScrollbarState,
     show_help: bool,
-    total_lines: usize,
+    san: Vec<String>,
 }
 
 impl Ui {
-    pub fn new(certificates: Vec<Certificate>) -> Self {
+    pub fn new(certificates: Vec<Certificate>, san: Vec<String>) -> Self {
         Self {
             should_quit: false,
             selected_tab: 0,
@@ -36,7 +36,7 @@ impl Ui {
             max_scroll: 0,
             scrollbar_state: ScrollbarState::default(),
             show_help: false,
-            total_lines: 0,
+            san,
         }
     }
 
@@ -55,13 +55,18 @@ impl Ui {
     fn render(&mut self, frame: &mut Frame) {
         let mut area = frame.area();
         area.width = if self.cert_amount < 6 {
-            90
+            100
         } else {
-            (self.cert_amount as u16 + 1) * 15
+            (self.cert_amount as u16 + 1) * 18
         };
 
-        let visible = area.height.saturating_sub(2) as usize;
-        self.max_scroll = self.total_lines.saturating_sub(visible);
+        let text = self.build_text();
+        let paragraph = Paragraph::new(text).wrap(Wrap { trim: false });
+        let inner_width = area.width.saturating_sub(4);
+        let total_lines = paragraph.line_count(inner_width);
+
+        let visible = area.height.saturating_sub(3) as usize;
+        self.max_scroll = total_lines.saturating_sub(visible);
         self.scroll = self.scroll.min(self.max_scroll);
 
         self.scrollbar_state = self
@@ -70,9 +75,9 @@ impl Ui {
             .viewport_content_length(visible)
             .position(self.scroll);
 
-        self.render_content(frame, area);
+        self.render_content(frame, area, paragraph);
         self.render_tabs(frame, area + Offset::new(1, 0));
-        if self.total_lines >= visible {
+        if total_lines >= visible {
             self.render_vertical_scrollbar(frame, area);
         }
     }
@@ -110,31 +115,15 @@ impl Ui {
         frame.render_widget(tabs, area);
     }
 
-    fn render_content(&mut self, frame: &mut Frame, area: Rect) {
-        let certificate = &self.certificates[self.selected_tab];
-
-        let text = Text::from(vec![
-            Line::from(format!("Subject: {}", certificate.subject)),
-            Line::from(format!("Issuer: {}", certificate.issuer)),
-            Line::from(format!("Authentication: {}", certificate.auth)),
-            Line::from(format!("Validity period: {}", certificate.validity_period)),
-        ]);
-
-        let paragraph = Paragraph::new(text).wrap(Wrap { trim: false });
-
-        self.total_lines = paragraph.line_count(area.width);
-
-        let block = paragraph.block(
+    fn render_content(&mut self, frame: &mut Frame, area: Rect, paragraph: Paragraph) {
+        let block = paragraph.wrap(Wrap { trim: false }).block(
             Block::bordered()
                 .border_type(BorderType::Rounded)
                 .padding(Padding::horizontal(1))
                 .border_style(Style::new().light_magenta())
                 .title_bottom("'h' - toggle help"),
         );
-        frame.render_widget(
-            block.scroll((self.scrollbar_state.get_position() as u16, 0)),
-            area,
-        );
+        frame.render_widget(block.scroll((self.scroll as u16, 0)), area);
 
         if self.show_help {
             self.render_help(frame, area);
@@ -168,5 +157,23 @@ impl Ui {
         )
         .block(popup_block);
         frame.render_widget(paragraph, centered_area);
+    }
+
+    fn build_text(&self) -> Vec<Line<'static>> {
+        let certificate = &self.certificates[self.selected_tab];
+        let mut text = vec![
+            Line::from(format!("Subject: {}", certificate.subject)),
+            Line::from(format!("Issuer: {}", certificate.issuer)),
+            Line::from(format!("Authentication: {}", certificate.auth)),
+            Line::from(format!("Validity period: {}", certificate.validity_period)),
+        ];
+        if self.selected_tab == 0 {
+            text.push(Line::from(format!(
+                "SAN ({}): {}",
+                self.san.len(),
+                self.san.join(", ")
+            )));
+        }
+        text
     }
 }
