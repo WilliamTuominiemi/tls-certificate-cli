@@ -22,6 +22,7 @@ pub struct Ui {
     max_scroll: usize,
     scrollbar_state: ScrollbarState,
     show_help: bool,
+    total_lines: usize,
 }
 
 impl Ui {
@@ -35,6 +36,7 @@ impl Ui {
             max_scroll: 0,
             scrollbar_state: ScrollbarState::default(),
             show_help: false,
+            total_lines: 0,
         }
     }
 
@@ -58,9 +60,8 @@ impl Ui {
             (self.cert_amount as u16 + 1) * 15
         };
 
-        let total_lines: usize = 4;
         let visible = area.height.saturating_sub(2) as usize;
-        self.max_scroll = total_lines.saturating_sub(visible);
+        self.max_scroll = self.total_lines.saturating_sub(visible);
         self.scroll = self.scroll.min(self.max_scroll);
 
         self.scrollbar_state = self
@@ -71,7 +72,9 @@ impl Ui {
 
         self.render_content(frame, area);
         self.render_tabs(frame, area + Offset::new(1, 0));
-        self.render_vertical_scrollbar(frame, area);
+        if self.total_lines >= visible {
+            self.render_vertical_scrollbar(frame, area);
+        }
     }
 
     fn handle_events(&mut self) -> io::Result<()> {
@@ -107,7 +110,7 @@ impl Ui {
         frame.render_widget(tabs, area);
     }
 
-    fn render_content(&self, frame: &mut Frame, area: Rect) {
+    fn render_content(&mut self, frame: &mut Frame, area: Rect) {
         let certificate = &self.certificates[self.selected_tab];
 
         let text = Text::from(vec![
@@ -117,7 +120,11 @@ impl Ui {
             Line::from(format!("Validity period: {}", certificate.validity_period)),
         ]);
 
-        let block = Paragraph::new(text).wrap(Wrap { trim: false }).block(
+        let paragraph = Paragraph::new(text).wrap(Wrap { trim: false });
+
+        self.total_lines = paragraph.line_count(area.width);
+
+        let block = paragraph.block(
             Block::bordered()
                 .border_type(BorderType::Rounded)
                 .padding(Padding::horizontal(1))
