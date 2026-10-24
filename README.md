@@ -1,6 +1,6 @@
 # tls-certificate-cli
 
-Inspect the TLS certificate chain of any website.
+Inspect the TLS certificate chain of any website. Fetches TLS certificates of a websites server with openssl.
 
 ![demo](demo.png)
 
