@@ -93,7 +93,15 @@ impl Ui {
     }
 
     pub fn render_tabs(&self, frame: &mut Frame, area: Rect) {
-        let titles = (0..self.cert_amount).map(|i| format!("Certificate {}", i));
+        let titles = (0..self.cert_amount).map(|i| {
+            if i == 0 {
+                format!(" {}. Leaf ", i)
+            } else if i == self.cert_amount - 1 {
+                format!(" {}. Root ", i)
+            } else {
+                format!(" {}. Intermediate ", i)
+            }
+        });
 
         let tabs = Tabs::new(titles).select(self.selected_tab);
         frame.render_widget(tabs, area);
