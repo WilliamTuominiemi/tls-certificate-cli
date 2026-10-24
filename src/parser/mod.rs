@@ -1,36 +1,31 @@
 pub struct Parser {
-    raw_certificate_chain: String,
+    raw_certificates: String,
 }
 
 impl Parser {
-    pub fn new(raw_certificate_chain: String) -> Self {
-        Parser {
-            raw_certificate_chain,
-        }
+    pub fn new(raw_certificates: String) -> Self {
+        Parser { raw_certificates }
     }
 
     pub fn certificate_chain_to_individual_certificates(&self) -> Vec<String> {
-        if let Some(start_index) = self.raw_certificate_chain.find("Certificate chain") {
-            let certificate_chain_start_trimmed =
-                &self.raw_certificate_chain[(start_index)..self.raw_certificate_chain.len()];
+        let raw = &self.raw_certificates;
 
-            if let Some(end_index) = self.raw_certificate_chain.find("Server certificate") {
-                let certificate_chain_start_and_end_trimmed =
-                    &certificate_chain_start_trimmed[18..end_index];
+        let Some(chain_start) = raw.find("Certificate chain") else {
+            return vec![];
+        };
+        let Some(chain_end) = raw.find("Server certificate") else {
+            return vec![];
+        };
+        let certificate_chain = &raw[chain_start + 18..chain_end];
 
-                let mut split_certificate_chain: Vec<String> =
-                    certificate_chain_start_and_end_trimmed
-                        .split("END CERTIFICATE")
-                        .map(|s| s.strip_prefix("-----\n").unwrap_or(s).to_string())
-                        .collect();
+        let mut split_certificate_chain: Vec<String> = certificate_chain
+            .split("END CERTIFICATE")
+            .map(|s| s.strip_prefix("-----\n").unwrap_or(s).to_string())
+            .collect();
 
-                split_certificate_chain.truncate(split_certificate_chain.len() - 1);
+        split_certificate_chain.truncate(split_certificate_chain.len() - 1);
 
-                return split_certificate_chain;
-            }
-        }
-
-        vec![]
+        split_certificate_chain
     }
 }
 
@@ -43,6 +38,8 @@ mod tests {
     #[test]
     fn test_certificate_chain_to_individual_certificates() {
         let certificate_chain = "
+            vjo80fg809adf9fb0d+g9f9
+            v8bd89809dfnjkn23908dfs
             ---
             Certificate chain
             0: first
@@ -59,6 +56,8 @@ mod tests {
             -----END CERTIFICATE-----
             ---
             Server certificate
+            vjo80fg809adf9fb0d+g9f9
+            v8bd89809dfnjkn23908dfs
             ";
 
         let parser = Parser::new(certificate_chain.to_string());
