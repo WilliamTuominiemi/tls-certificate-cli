@@ -1,9 +1,17 @@
+use std::env;
 use std::process::{Command, Stdio};
 
 mod ui;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let certificate_chain = fetch_certificate("www.example.com")?;
+    let args: Vec<String> = env::args().collect();
+    let url = if args.len() < 2 {
+        "www.example.com"
+    } else {
+        &args[1]
+    };
+
+    let certificate_chain = fetch_certificate(url)?;
     let split_certificate_chain = certificate_chain_to_individual_certificates(&certificate_chain);
 
     let ui = ui::Ui::new(split_certificate_chain);
