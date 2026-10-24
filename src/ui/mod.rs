@@ -1,8 +1,8 @@
-use ratatui::layout::{Margin, Offset, Rect};
+use ratatui::layout::{Constraint, Margin, Offset, Rect};
 use ratatui::style::Style;
 use ratatui::widgets::{
-    Block, BorderType, Padding, Paragraph, Scrollbar, ScrollbarOrientation, ScrollbarState, Tabs,
-    Wrap,
+    Block, BorderType, Clear, Padding, Paragraph, Scrollbar, ScrollbarOrientation, ScrollbarState,
+    Tabs, Wrap,
 };
 use ratatui::{
     DefaultTerminal, Frame,
@@ -18,6 +18,7 @@ pub struct Ui {
     scroll: usize,
     max_scroll: usize,
     scrollbar_state: ScrollbarState,
+    show_help: bool,
 }
 
 impl Ui {
@@ -36,6 +37,7 @@ impl Ui {
             scroll: 0,
             max_scroll: 0,
             scrollbar_state: ScrollbarState::default(),
+            show_help: false,
         }
     }
 
@@ -86,6 +88,7 @@ impl Ui {
                 }
                 KeyCode::Up => self.scroll = self.scroll.saturating_sub(1),
                 KeyCode::Down => self.scroll = (self.scroll + 1).min(self.max_scroll),
+                KeyCode::Char('h') => self.show_help = !self.show_help,
                 _ => {}
             }
         }
@@ -105,12 +108,17 @@ impl Ui {
             Block::bordered()
                 .border_type(BorderType::Rounded)
                 .padding(Padding::horizontal(1))
-                .border_style(Style::new().light_magenta()),
+                .border_style(Style::new().light_magenta())
+                .title_bottom("'h' - toggle help"),
         );
         frame.render_widget(
             block.scroll((self.scrollbar_state.get_position() as u16, 0)),
             area,
         );
+
+        if self.show_help {
+            self.render_help(frame, area);
+        }
     }
 
     fn render_vertical_scrollbar(&mut self, frame: &mut Frame, area: Rect) {
@@ -123,5 +131,20 @@ impl Ui {
             }),
             &mut self.scrollbar_state,
         );
+    }
+
+    fn render_help(&self, frame: &mut Frame, area: Rect) {
+        let popup_block = Block::bordered()
+            .title("Help")
+            .border_type(BorderType::Rounded)
+            .padding(Padding::horizontal(1))
+            .border_style(Style::new().light_cyan());
+        let centered_area = area.centered(Constraint::Length(60), Constraint::Length(5));
+
+        frame.render_widget(Clear, centered_area);
+        let paragraph = Paragraph::new("Arrow keys left/right - switch certificate \nArrow keys up/down - scroll certificate \nq - quit
+        ")
+            .block(popup_block);
+        frame.render_widget(paragraph, centered_area);
     }
 }
