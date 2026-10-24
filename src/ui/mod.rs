@@ -2,6 +2,7 @@ use ratatui::layout::{Margin, Offset, Rect};
 use ratatui::style::Style;
 use ratatui::widgets::{
     Block, BorderType, Padding, Paragraph, Scrollbar, ScrollbarOrientation, ScrollbarState, Tabs,
+    Wrap,
 };
 use ratatui::{
     DefaultTerminal, Frame,
@@ -51,7 +52,12 @@ impl Ui {
     }
 
     fn render(&mut self, frame: &mut Frame) {
-        let area = frame.area();
+        let mut area = frame.area();
+        area.width = if self.cert_amount < 6 {
+            90
+        } else {
+            (self.cert_amount as u16 + 1) * 15
+        };
 
         let total_lines = self.certificates[self.selected_tab].lines().count();
         let visible = area.height.saturating_sub(2) as usize;
@@ -95,7 +101,7 @@ impl Ui {
 
     fn render_content(&self, frame: &mut Frame, area: Rect) {
         let text = self.certificates[self.selected_tab as usize].clone();
-        let block = Paragraph::new(text).block(
+        let block = Paragraph::new(text).wrap(Wrap { trim: false }).block(
             Block::bordered()
                 .border_type(BorderType::Rounded)
                 .padding(Padding::horizontal(1))
