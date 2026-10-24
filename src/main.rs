@@ -1,6 +1,7 @@
 use std::env;
 use std::process::{Command, Stdio};
 
+mod certificate;
 mod parser;
 mod ui;
 
