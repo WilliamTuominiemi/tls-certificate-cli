@@ -142,9 +142,11 @@ impl Ui {
         let centered_area = area.centered(Constraint::Length(60), Constraint::Length(5));
 
         frame.render_widget(Clear, centered_area);
-        let paragraph = Paragraph::new("Arrow keys left/right - switch certificate \nArrow keys up/down - scroll certificate \nq - quit
-        ")
-            .block(popup_block);
+        let paragraph = Paragraph::new(
+            "← / → - switch certificate \n↑ / ↓ - scroll certificate \nq - quit
+        ",
+        )
+        .block(popup_block);
         frame.render_widget(paragraph, centered_area);
     }
 }
