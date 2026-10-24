@@ -29,10 +29,10 @@ fn fetch_certificate(url: &str) -> Result<String, Box<dyn std::error::Error>> {
     })
 }
 
-fn certificate_chain_to_individual_certificates(certificate_chain: &String) -> Vec<String> {
+fn certificate_chain_to_individual_certificates(certificate_chain: &str) -> Vec<String> {
     if let Some(start_index) = certificate_chain.find("Certificate chain") {
         let certificate_chain_start_trimmed =
-            &certificate_chain.as_str()[(start_index)..certificate_chain.len()];
+            &certificate_chain[(start_index)..certificate_chain.len()];
 
         if let Some(end_index) = certificate_chain.find("Server certificate") {
             let certificate_chain_start_and_end_trimmed =

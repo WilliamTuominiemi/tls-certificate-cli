@@ -40,7 +40,7 @@ impl Ui {
     }
 
     pub fn run(mut self) -> io::Result<()> {
-        ratatui::run(|mut terminal| self.main_loop(terminal))
+        ratatui::run(|terminal| self.main_loop(terminal))
     }
 
     fn main_loop(&mut self, terminal: &mut DefaultTerminal) -> io::Result<()> {
@@ -100,7 +100,7 @@ impl Ui {
     }
 
     fn render_content(&self, frame: &mut Frame, area: Rect) {
-        let text = self.certificates[self.selected_tab as usize].clone();
+        let text = self.certificates[self.selected_tab].clone();
         let block = Paragraph::new(text).wrap(Wrap { trim: false }).block(
             Block::bordered()
                 .border_type(BorderType::Rounded)
