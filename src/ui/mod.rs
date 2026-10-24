@@ -1,5 +1,6 @@
 use ratatui::layout::{Constraint, Margin, Offset, Rect};
 use ratatui::style::Style;
+use ratatui::text::{Line, Text};
 use ratatui::widgets::{
     Block, BorderType, Clear, Padding, Paragraph, Scrollbar, ScrollbarOrientation, ScrollbarState,
     Tabs, Wrap,
@@ -8,13 +9,15 @@ use ratatui::{
     DefaultTerminal, Frame,
     crossterm::event::{self, KeyCode},
 };
-use std::{cmp, io};
+use std::{format, io};
+
+use crate::certificate::Certificate;
 
 pub struct Ui {
     should_quit: bool,
     selected_tab: usize,
     cert_amount: usize,
-    certificates: Vec<String>,
+    certificates: Vec<Certificate>,
     scroll: usize,
     max_scroll: usize,
     scrollbar_state: ScrollbarState,
@@ -22,13 +25,7 @@ pub struct Ui {
 }
 
 impl Ui {
-    pub fn new(certificates: Vec<String>) -> Self {
-        let mut longest_certificate = 0;
-        for certificate in &certificates {
-            let lines: Vec<&str> = certificate.split("\n").collect();
-            longest_certificate = cmp::max(longest_certificate, lines.len());
-        }
-
+    pub fn new(certificates: Vec<Certificate>) -> Self {
         Self {
             should_quit: false,
             selected_tab: 0,
@@ -61,7 +58,7 @@ impl Ui {
             (self.cert_amount as u16 + 1) * 15
         };
 
-        let total_lines = self.certificates[self.selected_tab].lines().count();
+        let total_lines: usize = 4;
         let visible = area.height.saturating_sub(2) as usize;
         self.max_scroll = total_lines.saturating_sub(visible);
         self.scroll = self.scroll.min(self.max_scroll);
@@ -103,7 +100,15 @@ impl Ui {
     }
 
     fn render_content(&self, frame: &mut Frame, area: Rect) {
-        let text = self.certificates[self.selected_tab].clone();
+        let certificate = &self.certificates[self.selected_tab];
+
+        let text = Text::from(vec![
+            Line::from(format!("Subject: {}", certificate.subject)),
+            Line::from(format!("Issuer: {}", certificate.issuer)),
+            Line::from(format!("Authentication: {}", certificate.auth)),
+            Line::from(format!("Validity period: {}", certificate.validity_period)),
+        ]);
+
         let block = Paragraph::new(text).wrap(Wrap { trim: false }).block(
             Block::bordered()
                 .border_type(BorderType::Rounded)
