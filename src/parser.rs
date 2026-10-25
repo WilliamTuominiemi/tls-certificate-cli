@@ -94,9 +94,15 @@ impl Parser {
         let not_before = &s[not_before_start + 11..not_before_start + not_before_end];
         let not_after = &s[not_after_start + 10..s.len()];
 
+        let parsed_not_before = self.parse_openssl_date(not_before).unwrap();
+        let parsed_not_after = self.parse_openssl_date(not_after).unwrap();
+
+        let difference = (parsed_not_after - chrono::offset::Utc::now()).num_days();
+
         ValidityPeriod {
-            not_before: self.parse_openssl_date(not_before).unwrap(),
-            not_after: self.parse_openssl_date(not_after).unwrap(),
+            not_before: parsed_not_before,
+            not_after: parsed_not_after,
+            days_left: difference,
         }
     }
 
@@ -179,7 +185,8 @@ mod tests {
             individual_certificates[0].validity_period,
             ValidityPeriod {
                 not_before: "2022-10-21T17:02:23Z".parse().unwrap(),
-                not_after: "2037-10-17T17:02:22Z".parse().unwrap()
+                not_after: "2037-10-17T17:02:22Z".parse().unwrap(),
+                days_left: 4009,
             }
         );
     }
