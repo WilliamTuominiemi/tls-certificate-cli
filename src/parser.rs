@@ -1,4 +1,7 @@
-use crate::certificate::{self, Certificate};
+use crate::certificate::{self, Certificate, ValidityPeriod};
+
+use chrono::{DateTime, NaiveDateTime, Utc};
+use core::panic;
 
 pub struct Parser {
     raw_certificates: String,
@@ -65,15 +68,41 @@ impl Parser {
                 subject: certificate[subject_start + 2..subject_start + subject_end].to_string(),
                 issuer: certificate[issuer_start + 2..issuer_start + issuer_end].to_string(),
                 auth: certificate[auth_start + 2..auth_start + auth_end].to_string(),
-                validity_period: certificate
-                    [validity_period_start + 2..validity_period_start + validity_period_end]
-                    .to_string(),
+                validity_period: self.get_dates_out_of_string(
+                    &certificate
+                        [validity_period_start + 2..validity_period_start + validity_period_end],
+                ),
             };
 
             certificates.push(certificate);
         }
 
         certificates
+    }
+
+    fn get_dates_out_of_string(&self, s: &str) -> ValidityPeriod {
+        let Some(not_before_start) = s.find("NotBefore:") else {
+            panic!("NotBefore start not found");
+        };
+        let Some(not_before_end) = s[not_before_start..].find(";") else {
+            panic!("NotBefore end not found");
+        };
+        let Some(not_after_start) = s.find("NotAfter:") else {
+            panic!("NotAfter start not found");
+        };
+
+        let not_before = &s[not_before_start + 11..not_before_start + not_before_end];
+        let not_after = &s[not_after_start + 10..s.len()];
+
+        ValidityPeriod {
+            not_before: self.parse_openssl_date(not_before).unwrap(),
+            not_after: self.parse_openssl_date(not_after).unwrap(),
+        }
+    }
+
+    fn parse_openssl_date(&self, s: &str) -> Result<DateTime<Utc>, chrono::ParseError> {
+        let naive = NaiveDateTime::parse_from_str(s, "%b %e %H:%M:%S %Y GMT")?;
+        Ok(naive.and_utc())
     }
 }
 
@@ -93,21 +122,21 @@ mod tests {
             0:  s:
                 i:
                 a:
-                v:
+                v:NotBefore: Sep 26 22:49:11 2026 GMT; NotAfter: Dec 25 22:56:35 2026 GMT
             -----BEGIN CERTIFICATE-----
             123
             -----END CERTIFICATE-----
             1:  s:
                 i:
                 a:
-                v:
+                v:NotBefore: May 29 19:49:45 2025 GMT; NotAfter: May 27 19:49:44 2035 GMT
             -----BEGIN CERTIFICATE-----
             321
             -----END CERTIFICATE-----
             2:  s:
                 i:
                 a:
-                v:
+                v:NotBefore: Oct 21 17:02:23 2022 GMT; NotAfter: Oct 17 17:02:22 2037 GMT
             -----BEGIN CERTIFICATE-----
             231
             -----END CERTIFICATE-----
@@ -133,7 +162,7 @@ mod tests {
             0:  s:SUBJECT
                 i:ISSUER
                 a:AUTH
-                v:VALIDITY_PERIOD
+                v:NotBefore: Oct 21 17:02:23 2022 GMT; NotAfter: Oct 17 17:02:22 2037 GMT
             -----BEGIN CERTIFICATE-----
             123
             -----END CERTIFICATE-----
@@ -148,7 +177,10 @@ mod tests {
         assert_eq!(individual_certificates[0].auth, "AUTH");
         assert_eq!(
             individual_certificates[0].validity_period,
-            "VALIDITY_PERIOD"
+            ValidityPeriod {
+                not_before: "2022-10-21T17:02:23Z".parse().unwrap(),
+                not_after: "2037-10-17T17:02:22Z".parse().unwrap()
+            }
         );
     }
 }
