@@ -166,8 +166,10 @@ impl Ui {
             Line::from(format!("Issuer: {}", certificate.issuer)),
             Line::from(format!("Authentication: {}", certificate.auth)),
             Line::from(format!(
-                "Validity period: not before {}, not after {}",
-                certificate.validity_period.not_before, certificate.validity_period.not_after
+                "Validity period: {} - {} ({} days left)",
+                certificate.validity_period.not_before.format("%d/%m/%Y"),
+                certificate.validity_period.not_after.format("%d/%m/%Y"),
+                certificate.validity_period.days_left
             )),
         ];
         if self.selected_tab == 0 {

@@ -10,5 +10,6 @@ pub struct Certificate {
 #[derive(PartialEq, Debug)]
 pub struct ValidityPeriod {
     pub not_before: DateTime<Utc>,
-    pub not_after: DateTime<Utc>
+    pub not_after: DateTime<Utc>,
+    pub days_left: i64,
 }
