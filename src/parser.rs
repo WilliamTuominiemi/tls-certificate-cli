@@ -50,6 +50,3 @@ impl<'a> Parser<'a> {
         DateTime::from_timestamp(seconds, 0).unwrap()
     }
 }
-
-#[cfg(test)]
-mod tests {}

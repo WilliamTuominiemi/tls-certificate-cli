@@ -162,7 +162,6 @@ impl<'a> Ui<'a> {
         let mut text = vec![
             Line::from(format!("Subject: {}", certificate.subject)),
             Line::from(format!("Issuer: {}", certificate.issuer)),
-            // Line::from(format!("Authentication: {}", certificate.auth)),
             Line::from(format!(
                 "Validity period: {} - {} ({} days left)",
                 certificate.validity_period.not_before.format("%d/%m/%Y"),

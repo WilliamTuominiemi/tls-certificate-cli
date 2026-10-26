@@ -8,7 +8,6 @@ pub struct Certificate<'a> {
     pub san: Option<SubjectAlternativeName<'a>>,
 }
 
-#[derive(PartialEq, Debug)]
 pub struct ValidityPeriod {
     pub not_before: DateTime<Utc>,
     pub not_after: DateTime<Utc>,
