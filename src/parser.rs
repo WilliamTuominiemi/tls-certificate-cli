@@ -38,12 +38,18 @@ impl<'a> Parser<'a> {
                 .basic_constraints()?
                 .map(|extension| extension.value.clone());
 
+            let key_usage = x509_cert
+                .key_usage()?
+                .map(|extension| *extension.value)
+                .map_or_else(|| "".to_string(), |k_u| format!("Key usage: {}", k_u));
+
             let certificate = Certificate {
                 subject,
                 issuer,
                 validity_period,
                 san,
                 basic_constraints,
+                key_usage,
             };
             certificates.push(certificate);
         }
