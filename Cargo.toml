@@ -6,4 +6,7 @@ edition = "2024"
 [dependencies]
 chrono = "0.4.45"
 crossterm = "0.29.0"
+pem = "4.0.0"
 ratatui = {version = "0.30.2", features = ["unstable-rendered-line-info"]}
+rustls = "0.23.46"
+webpki-roots = "1.0.11"
