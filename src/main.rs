@@ -4,6 +4,7 @@ use std::env;
 use std::io::Write;
 use std::net::TcpStream;
 use std::sync::Arc;
+use x509_parser::prelude::*;
 
 mod certificate;
 mod parser;
@@ -34,8 +35,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let tls_connection = &tls.conn;
     if let Some(certificates) = tls_connection.peer_certificates() {
         for (i, der) in certificates.iter().enumerate() {
-            let pem = pem::encode(&pem::Pem::new("CERTIFICATE", der.as_ref().to_vec()));
-            println!("--- Certificate {i} ---\n{pem}");
+            let res: (&[u8], X509Certificate<'_>) = X509Certificate::from_der(der)?;
+            let cert = res.1;
+            println!("Subject: {}", cert.subject());
+            println!("Issuer:  {}", cert.issuer());
+            println!(
+                "Valid:   {} to {}",
+                cert.validity().not_before,
+                cert.validity().not_after
+            );
         }
     }
     println!("Protocol: {:?}", tls_connection.protocol_version());
