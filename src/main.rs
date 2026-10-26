@@ -1,9 +1,9 @@
 use rustls::pki_types::ServerName;
 use rustls::{ClientConnection, StreamOwned};
-use std::env;
 use std::io::Write;
 use std::net::TcpStream;
 use std::sync::Arc;
+use std::{env, vec};
 use x509_parser::prelude::*;
 
 mod certificate;
@@ -33,21 +33,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     tls.flush()?;
 
     let tls_connection = &tls.conn;
+    let mut x509_certificates: Vec<X509Certificate<'_>> = vec![];
     if let Some(certificates) = tls_connection.peer_certificates() {
         for (i, der) in certificates.iter().enumerate() {
             let res: (&[u8], X509Certificate<'_>) = X509Certificate::from_der(der)?;
-            let cert = res.1;
-            println!("Subject: {}", cert.subject());
-            println!("Issuer:  {}", cert.issuer());
-            println!(
-                "Valid:   {} to {}",
-                cert.validity().not_before,
-                cert.validity().not_after
-            );
+            let cert: X509Certificate<'_> = res.1;
+            x509_certificates.push(cert);
         }
     }
-    println!("Protocol: {:?}", tls_connection.protocol_version());
-    println!("Cipher:   {:?}", tls_connection.negotiated_cipher_suite());
 
     // let ui = ui::Ui::new(split_certificate_chain, san);
     // let _ = ui.run();
