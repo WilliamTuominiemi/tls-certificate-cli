@@ -42,6 +42,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
+    let parser = parser::Parser::new(x509_certificates);
+    let parsed_certificates = parser.parse_certificates();
+
     // let ui = ui::Ui::new(split_certificate_chain, san);
     // let _ = ui.run();
 
