@@ -30,14 +30,20 @@ impl<'a> Parser<'a> {
                 days_left,
             };
 
-            let subject_alternative_name = x509_cert.subject_alternative_name()?;
-            let san = subject_alternative_name.map(|extension| extension.value.clone());
+            let san = x509_cert
+                .subject_alternative_name()?
+                .map(|extension| extension.value.clone());
+
+            let basic_constraints = x509_cert
+                .basic_constraints()?
+                .map(|extension| extension.value.clone());
 
             let certificate = Certificate {
                 subject,
                 issuer,
                 validity_period,
                 san,
+                basic_constraints,
             };
             certificates.push(certificate);
         }
