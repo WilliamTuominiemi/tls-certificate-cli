@@ -170,6 +170,19 @@ impl<'a> Ui<'a> {
             )),
         ];
 
+        if let Some(basic_constraints) = &certificate.basic_constraints {
+            let line = if basic_constraints.ca {
+                let path_len = match basic_constraints.path_len_constraint {
+                    Some(len) => len.to_string(),
+                    None => "unlimited".to_string(),
+                };
+                format!("CA: true, Path length: {}", path_len)
+            } else {
+                "CA: false".to_string()
+            };
+            text.push(Line::from(line));
+        }
+
         if let Some(san) = &certificate.san {
             let names = san
                 .general_names
