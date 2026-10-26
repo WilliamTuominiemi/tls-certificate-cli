@@ -1,12 +1,11 @@
 use chrono::{DateTime, Utc};
-use x509_parser::{extensions::BasicConstraints, prelude::SubjectAlternativeName};
 
-pub struct Certificate<'a> {
+pub struct Certificate {
     pub subject: String,
     pub issuer: String,
     pub validity_period: ValidityPeriod,
-    pub san: Option<SubjectAlternativeName<'a>>,
-    pub basic_constraints: Option<BasicConstraints>,
+    pub subject_alternative_name: String,
+    pub basic_constraints: String,
     pub key_usage: String,
 }
 
