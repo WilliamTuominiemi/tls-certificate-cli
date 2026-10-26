@@ -13,19 +13,19 @@ use std::{format, io};
 
 use crate::certificate::Certificate;
 
-pub struct Ui<'a> {
+pub struct Ui {
     should_quit: bool,
     selected_tab: usize,
     cert_amount: usize,
-    certificates: Vec<Certificate<'a>>,
+    certificates: Vec<Certificate>,
     scroll: usize,
     max_scroll: usize,
     scrollbar_state: ScrollbarState,
     show_help: bool,
 }
 
-impl<'a> Ui<'a> {
-    pub fn new(certificates: Vec<Certificate<'a>>) -> Self {
+impl Ui {
+    pub fn new(certificates: Vec<Certificate>) -> Self {
         Self {
             should_quit: false,
             selected_tab: 0,
@@ -159,7 +159,7 @@ impl<'a> Ui<'a> {
 
     fn build_text(&self) -> Vec<Line<'static>> {
         let certificate = &self.certificates[self.selected_tab];
-        let mut text = vec![
+        let text = vec![
             Line::from(format!("Subject: {}", certificate.subject)),
             Line::from(format!("Issuer: {}", certificate.issuer)),
             Line::from(format!(
@@ -168,37 +168,10 @@ impl<'a> Ui<'a> {
                 certificate.validity_period.not_after.format("%d/%m/%Y"),
                 certificate.validity_period.days_left
             )),
+            Line::from(certificate.basic_constraints.to_string()),
+            Line::from(certificate.key_usage.to_string()),
+            Line::from(certificate.subject_alternative_name.to_string()),
         ];
-
-        if let Some(basic_constraints) = &certificate.basic_constraints {
-            let line = if basic_constraints.ca {
-                let path_len = match basic_constraints.path_len_constraint {
-                    Some(len) => len.to_string(),
-                    None => "unlimited".to_string(),
-                };
-                format!("CA: true, Path length: {}", path_len)
-            } else {
-                "CA: false".to_string()
-            };
-            text.push(Line::from(line));
-        }
-
-        text.push(Line::from(certificate.key_usage.to_string()));
-
-        if let Some(san) = &certificate.san {
-            let names = san
-                .general_names
-                .iter()
-                .map(|n| n.to_string())
-                .collect::<Vec<_>>()
-                .join(", ");
-
-            text.push(Line::from(format!(
-                "SAN ({}): {}",
-                san.general_names.len(),
-                names
-            )));
-        }
 
         text
     }
