@@ -22,11 +22,11 @@ pub struct Ui {
     max_scroll: usize,
     scrollbar_state: ScrollbarState,
     show_help: bool,
-    san: Vec<String>,
+    // san: Vec<String>,
 }
 
 impl Ui {
-    pub fn new(certificates: Vec<Certificate>, san: Vec<String>) -> Self {
+    pub fn new(certificates: Vec<Certificate>) -> Self {
         Self {
             should_quit: false,
             selected_tab: 0,
@@ -36,7 +36,7 @@ impl Ui {
             max_scroll: 0,
             scrollbar_state: ScrollbarState::default(),
             show_help: false,
-            san,
+            // san,
         }
     }
 
@@ -164,7 +164,7 @@ impl Ui {
         let mut text = vec![
             Line::from(format!("Subject: {}", certificate.subject)),
             Line::from(format!("Issuer: {}", certificate.issuer)),
-            Line::from(format!("Authentication: {}", certificate.auth)),
+            // Line::from(format!("Authentication: {}", certificate.auth)),
             Line::from(format!(
                 "Validity period: {} - {} ({} days left)",
                 certificate.validity_period.not_before.format("%d/%m/%Y"),
@@ -172,13 +172,13 @@ impl Ui {
                 certificate.validity_period.days_left
             )),
         ];
-        if self.selected_tab == 0 {
-            text.push(Line::from(format!(
-                "SAN ({}): {}",
-                self.san.len(),
-                self.san.join(", ")
-            )));
-        }
+        // if self.selected_tab == 0 {
+        //     text.push(Line::from(format!(
+        //         "SAN ({}): {}",
+        //         self.san.len(),
+        //         self.san.join(", ")
+        //     )));
+        // }
         text
     }
 }

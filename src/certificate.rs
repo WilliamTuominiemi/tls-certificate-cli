@@ -3,7 +3,6 @@ use chrono::{DateTime, Utc};
 pub struct Certificate {
     pub subject: String,
     pub issuer: String,
-    pub auth: String,
     pub validity_period: ValidityPeriod,
 }
 
