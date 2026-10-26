@@ -1,9 +1,11 @@
 use chrono::{DateTime, Utc};
+use x509_parser::prelude::SubjectAlternativeName;
 
-pub struct Certificate {
+pub struct Certificate<'a> {
     pub subject: String,
     pub issuer: String,
     pub validity_period: ValidityPeriod,
+    pub san: Option<SubjectAlternativeName<'a>>,
 }
 
 #[derive(PartialEq, Debug)]

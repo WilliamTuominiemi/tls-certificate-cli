@@ -13,20 +13,19 @@ use std::{format, io};
 
 use crate::certificate::Certificate;
 
-pub struct Ui {
+pub struct Ui<'a> {
     should_quit: bool,
     selected_tab: usize,
     cert_amount: usize,
-    certificates: Vec<Certificate>,
+    certificates: Vec<Certificate<'a>>,
     scroll: usize,
     max_scroll: usize,
     scrollbar_state: ScrollbarState,
     show_help: bool,
-    // san: Vec<String>,
 }
 
-impl Ui {
-    pub fn new(certificates: Vec<Certificate>) -> Self {
+impl<'a> Ui<'a> {
+    pub fn new(certificates: Vec<Certificate<'a>>) -> Self {
         Self {
             should_quit: false,
             selected_tab: 0,
@@ -36,7 +35,6 @@ impl Ui {
             max_scroll: 0,
             scrollbar_state: ScrollbarState::default(),
             show_help: false,
-            // san,
         }
     }
 
@@ -172,13 +170,22 @@ impl Ui {
                 certificate.validity_period.days_left
             )),
         ];
-        // if self.selected_tab == 0 {
-        //     text.push(Line::from(format!(
-        //         "SAN ({}): {}",
-        //         self.san.len(),
-        //         self.san.join(", ")
-        //     )));
-        // }
+
+        if let Some(san) = &certificate.san {
+            let names = san
+                .general_names
+                .iter()
+                .map(|n| n.to_string())
+                .collect::<Vec<_>>()
+                .join(", ");
+
+            text.push(Line::from(format!(
+                "SAN ({}): {}",
+                san.general_names.len(),
+                names
+            )));
+        }
+
         text
     }
 }

@@ -35,7 +35,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let tls_connection = &tls.conn;
     let mut x509_certificates: Vec<X509Certificate<'_>> = vec![];
     if let Some(certificates) = tls_connection.peer_certificates() {
-        for (i, der) in certificates.iter().enumerate() {
+        for der in certificates {
             let res: (&[u8], X509Certificate<'_>) = X509Certificate::from_der(der)?;
             let cert: X509Certificate<'_> = res.1;
             x509_certificates.push(cert);
@@ -43,7 +43,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     let parser = parser::Parser::new(x509_certificates);
-    let parsed_certificates = parser.parse_certificates();
+    let parsed_certificates = parser.parse_certificates()?;
 
     let ui = ui::Ui::new(parsed_certificates);
     let _ = ui.run();

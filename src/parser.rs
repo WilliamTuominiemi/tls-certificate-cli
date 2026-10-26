@@ -1,4 +1,4 @@
-use crate::certificate::{self, Certificate, ValidityPeriod};
+use crate::certificate::{Certificate, ValidityPeriod};
 
 use chrono::{DateTime, Utc};
 use x509_parser::certificate::X509Certificate;
@@ -13,7 +13,7 @@ impl<'a> Parser<'a> {
         Parser { x509_certificates }
     }
 
-    pub fn parse_certificates(&self) -> Vec<Certificate> {
+    pub fn parse_certificates(&self) -> Result<Vec<Certificate<'_>>, Box<dyn std::error::Error>> {
         let mut certificates = Vec::new();
 
         for x509_cert in &self.x509_certificates {
@@ -30,15 +30,19 @@ impl<'a> Parser<'a> {
                 days_left,
             };
 
+            let subject_alternative_name = x509_cert.subject_alternative_name()?;
+            let san = subject_alternative_name.map(|extension| extension.value.clone());
+
             let certificate = Certificate {
                 subject,
                 issuer,
                 validity_period,
+                san,
             };
             certificates.push(certificate);
         }
 
-        certificates
+        Ok(certificates)
     }
 
     fn asn1_time_to_chrono(&self, asn1: &ASN1Time) -> DateTime<Utc> {
