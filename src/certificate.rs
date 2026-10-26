@@ -7,6 +7,7 @@ pub struct Certificate<'a> {
     pub validity_period: ValidityPeriod,
     pub san: Option<SubjectAlternativeName<'a>>,
     pub basic_constraints: Option<BasicConstraints>,
+    pub key_usage: String,
 }
 
 pub struct ValidityPeriod {

@@ -183,6 +183,8 @@ impl<'a> Ui<'a> {
             text.push(Line::from(line));
         }
 
+        text.push(Line::from(certificate.key_usage.to_string()));
+
         if let Some(san) = &certificate.san {
             let names = san
                 .general_names
