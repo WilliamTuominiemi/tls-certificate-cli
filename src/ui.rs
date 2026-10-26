@@ -13,20 +13,19 @@ use std::{format, io};
 
 use crate::certificate::Certificate;
 
-pub struct Ui {
+pub struct Ui<'a> {
     should_quit: bool,
     selected_tab: usize,
     cert_amount: usize,
-    certificates: Vec<Certificate>,
+    certificates: Vec<Certificate<'a>>,
     scroll: usize,
     max_scroll: usize,
     scrollbar_state: ScrollbarState,
     show_help: bool,
-    san: Vec<String>,
 }
 
-impl Ui {
-    pub fn new(certificates: Vec<Certificate>, san: Vec<String>) -> Self {
+impl<'a> Ui<'a> {
+    pub fn new(certificates: Vec<Certificate<'a>>) -> Self {
         Self {
             should_quit: false,
             selected_tab: 0,
@@ -36,7 +35,6 @@ impl Ui {
             max_scroll: 0,
             scrollbar_state: ScrollbarState::default(),
             show_help: false,
-            san,
         }
     }
 
@@ -164,7 +162,6 @@ impl Ui {
         let mut text = vec![
             Line::from(format!("Subject: {}", certificate.subject)),
             Line::from(format!("Issuer: {}", certificate.issuer)),
-            Line::from(format!("Authentication: {}", certificate.auth)),
             Line::from(format!(
                 "Validity period: {} - {} ({} days left)",
                 certificate.validity_period.not_before.format("%d/%m/%Y"),
@@ -172,13 +169,22 @@ impl Ui {
                 certificate.validity_period.days_left
             )),
         ];
-        if self.selected_tab == 0 {
+
+        if let Some(san) = &certificate.san {
+            let names = san
+                .general_names
+                .iter()
+                .map(|n| n.to_string())
+                .collect::<Vec<_>>()
+                .join(", ");
+
             text.push(Line::from(format!(
                 "SAN ({}): {}",
-                self.san.len(),
-                self.san.join(", ")
+                san.general_names.len(),
+                names
             )));
         }
+
         text
     }
 }

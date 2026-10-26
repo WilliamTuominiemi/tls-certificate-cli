@@ -1,5 +1,10 @@
-use std::env;
-use std::process::{Command, Stdio};
+use rustls::pki_types::ServerName;
+use rustls::{ClientConnection, StreamOwned};
+use std::io::Write;
+use std::net::TcpStream;
+use std::sync::Arc;
+use std::{env, vec};
+use x509_parser::prelude::*;
 
 mod certificate;
 mod parser;
@@ -7,70 +12,50 @@ mod ui;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = env::args().collect();
-    let url = if args.len() < 2 {
+    let host = if args.len() < 2 {
         "www.example.com"
     } else {
         &args[1]
     };
 
-    let certificate_chain = fetch_certificate(url)?;
-    let parser = parser::Parser::new(certificate_chain);
-    let split_certificate_chain = parser.certificate_chain_to_individual_certificates();
-    let san = fetch_san(url)?;
+    let connection = set_up_connection(host)?;
+    let socket = TcpStream::connect((host, 443))?;
+    let mut tls: StreamOwned<ClientConnection, TcpStream> = StreamOwned::new(connection, socket);
 
-    let ui = ui::Ui::new(split_certificate_chain, san);
+    tls.flush()?;
+
+    let tls_connection = &tls.conn;
+    let x509_certificates = get_certificates(tls_connection);
+
+    let parser: parser::Parser<'_> = parser::Parser::new(x509_certificates);
+    let parsed_certificates = parser.parse_certificates()?;
+
+    let ui = ui::Ui::new(parsed_certificates);
     let _ = ui.run();
 
     Ok(())
 }
 
-fn fetch_certificate(url: &str) -> Result<String, Box<dyn std::error::Error>> {
-    let output = Command::new("openssl")
-        .arg("s_client")
-        .arg("-showcerts")
-        .arg("-servername")
-        .arg(url)
-        .arg("-connect")
-        .arg(format!("{}:443", url))
-        .stdin(Stdio::null())
-        .output()?;
+fn set_up_connection(host: &str) -> Result<ClientConnection, Box<dyn std::error::Error>> {
+    let root_store =
+        rustls::RootCertStore::from_iter(webpki_roots::TLS_SERVER_ROOTS.iter().cloned());
+    let config = rustls::ClientConfig::builder()
+        .with_root_certificates(root_store)
+        .with_no_client_auth();
+    let server_name = ServerName::try_from(host.to_string())?;
 
-    Ok(match str::from_utf8(&output.stdout) {
-        Ok(val) => val.to_string(),
-        Err(_) => panic!("got non UTF-8 data from openssl"),
-    })
+    Ok(ClientConnection::new(Arc::new(config), server_name)?)
 }
 
-fn fetch_san(host: &str) -> Result<Vec<String>, Box<dyn std::error::Error>> {
-    let mut client = Command::new("openssl")
-        .args([
-            "s_client",
-            "-connect",
-            &format!("{}:443", host),
-            "-servername",
-            host,
-        ])
-        .stdin(Stdio::null())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::null())
-        .spawn()?;
+fn get_certificates<'a>(tls_connection: &'a ClientConnection) -> Vec<X509Certificate<'a>> {
+    let mut x509_certificates: Vec<X509Certificate<'_>> = vec![];
+    if let Some(certificates) = tls_connection.peer_certificates() {
+        for der in certificates {
+            let res: (&[u8], X509Certificate<'_>) = X509Certificate::from_der(der).unwrap();
+            let cert: X509Certificate<'_> = res.1;
+            x509_certificates.push(cert);
+        }
+    }
 
-    let output = Command::new("openssl")
-        .args(["x509", "-noout", "-text"])
-        .stdin(Stdio::from(client.stdout.take().ok_or("no stdout")?))
-        .stderr(Stdio::null())
-        .output()?;
-
-    client.wait()?;
-
-    let text = String::from_utf8(output.stdout)?;
-
-    let sans: Vec<String> = text
-        .lines()
-        .filter(|l| l.contains("DNS:"))
-        .flat_map(|l| l.split(','))
-        .filter_map(|s| s.trim().strip_prefix("DNS:").map(str::to_string))
-        .collect();
-
-    Ok(sans)
+    x509_certificates
 }
