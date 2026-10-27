@@ -1,7 +1,7 @@
-use crate::certificate::{Certificate, ValidityPeriod};
+use crate::certificate::Certificate;
 
 use chrono::{DateTime, Utc};
-use x509_parser::certificate::X509Certificate;
+use x509_parser::certificate::{Validity, X509Certificate};
 use x509_parser::time::ASN1Time;
 
 pub struct Parser<'a> {
@@ -21,14 +21,8 @@ impl<'a> Parser<'a> {
 
             let issuer = x509_cert.issuer().to_string();
 
-            let not_before = self.asn1_time_to_chrono(&x509_cert.validity().not_before);
-            let not_after = self.asn1_time_to_chrono(&x509_cert.validity().not_after);
-            let days_left = (not_after - chrono::offset::Utc::now()).num_days();
-            let validity_period = ValidityPeriod {
-                not_before,
-                not_after,
-                days_left,
-            };
+            let validity_period =
+                self.parse_validity_period(&x509_cert.validity, chrono::offset::Utc::now());
 
             let subject_alternative_name = self.parse_subject_alternative_name(
                 x509_cert
@@ -102,6 +96,25 @@ impl<'a> Parser<'a> {
             "SubjectAlternativeName not found".to_string()
         }
     }
+
+    fn parse_validity_period(&self, validity: &Validity, time_now: DateTime<Utc>) -> String {
+        let not_before = self.asn1_time_to_chrono(&validity.not_before);
+        let not_after = self.asn1_time_to_chrono(&validity.not_after);
+        let days_left = (not_after - time_now).num_days();
+        let days_left_message = if days_left >= 0 {
+            format!("{} days left", days_left).to_string()
+        } else {
+            "Expired".to_string()
+        };
+
+        let s = format!(
+            "{} - {} ({})",
+            not_before.format("%d/%m/%Y"),
+            not_after.format("%d/%m/%Y"),
+            days_left_message
+        );
+        s
+    }
 }
 
 #[cfg(test)]
@@ -156,5 +169,35 @@ mod tests {
             output,
             "SAN (2): DNSName(example.com), DNSName(www.example.com)"
         );
+    }
+
+    #[test]
+    fn test_parse_validity_period_still_valid() {
+        let parser = Parser::new(vec![]);
+
+        let validity = Validity {
+            not_before: ASN1Time::from_timestamp(1_700_000_000).unwrap(),
+            not_after: ASN1Time::from_timestamp(1_800_000_000).unwrap(),
+        };
+        let mock_current_time = DateTime::from_timestamp(1_750_000_000, 0).unwrap();
+
+        let output = parser.parse_validity_period(&validity, mock_current_time);
+
+        assert_eq!(output, "14/11/2023 - 15/01/2027 (578 days left)");
+    }
+
+    #[test]
+    fn test_parse_validity_period_invalid() {
+        let parser = Parser::new(vec![]);
+
+        let validity = Validity {
+            not_before: ASN1Time::from_timestamp(1_700_000_000).unwrap(),
+            not_after: ASN1Time::from_timestamp(1_800_000_000).unwrap(),
+        };
+        let mock_current_time = DateTime::from_timestamp(1_800_086_400, 0).unwrap();
+
+        let output = parser.parse_validity_period(&validity, mock_current_time);
+
+        assert_eq!(output, "14/11/2023 - 15/01/2027 (Expired)");
     }
 }
