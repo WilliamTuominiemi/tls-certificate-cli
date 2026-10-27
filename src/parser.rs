@@ -82,7 +82,7 @@ impl<'a> Parser<'a> {
     fn parse_subject_alternative_name(
         &self,
         subject_alternative_name: Option<x509_parser::prelude::SubjectAlternativeName<'_>>,
-    ) -> String {
+    ) -> Option<String> {
         if let Some(san) = subject_alternative_name {
             let names = san
                 .general_names
@@ -91,9 +91,9 @@ impl<'a> Parser<'a> {
                 .collect::<Vec<_>>()
                 .join(", ");
 
-            format!("SAN ({}): {}", san.general_names.len(), names).to_string()
+            Some(format!("SAN ({}): {}", san.general_names.len(), names).to_string())
         } else {
-            "SubjectAlternativeName not found".to_string()
+            None
         }
     }
 
@@ -163,12 +163,23 @@ mod tests {
             ],
         };
 
-        let output = parser.parse_subject_alternative_name(Some(subject_alternative_name));
+        let output = parser
+            .parse_subject_alternative_name(Some(subject_alternative_name))
+            .unwrap();
 
         assert_eq!(
             output,
             "SAN (2): DNSName(example.com), DNSName(www.example.com)"
         );
+    }
+
+    #[test]
+    fn test_parse_subject_alternative_name_missing_san() {
+        let parser = Parser::new(vec![]);
+
+        let output = parser.parse_subject_alternative_name(None);
+
+        assert_eq!(output, None);
     }
 
     #[test]
