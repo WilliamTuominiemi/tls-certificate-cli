@@ -162,12 +162,7 @@ impl Ui {
         let text = vec![
             Line::from(format!("Subject: {}", certificate.subject)),
             Line::from(format!("Issuer: {}", certificate.issuer)),
-            Line::from(format!(
-                "Validity period: {} - {} ({} days left)",
-                certificate.validity_period.not_before.format("%d/%m/%Y"),
-                certificate.validity_period.not_after.format("%d/%m/%Y"),
-                certificate.validity_period.days_left
-            )),
+            Line::from(format!("Validity period: {}", certificate.validity_period)),
             Line::from(certificate.basic_constraints.to_string()),
             Line::from(certificate.key_usage.to_string()),
             Line::from(certificate.subject_alternative_name.to_string()),
