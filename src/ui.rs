@@ -170,6 +170,10 @@ impl Ui {
                 "Signature algorithm: {}",
                 certificate.signature_algorithm
             )),
+            Line::from(format!(
+                "Public key & Algorithm: {}",
+                certificate.public_key_and_algorithm
+            )),
         ];
 
         if let Some(subject_alternative_name) = &certificate.subject_alternative_name {
