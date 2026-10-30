@@ -2,15 +2,20 @@ use crate::certificate::Certificate;
 
 use chrono::{DateTime, Utc};
 use x509_parser::certificate::{Validity, X509Certificate};
+use x509_parser::oid_registry::{OidRegistry, format_oid};
 use x509_parser::time::ASN1Time;
 
 pub struct Parser<'a> {
     x509_certificates: Vec<X509Certificate<'a>>,
+    oid_registry: OidRegistry<'a>,
 }
 
 impl<'a> Parser<'a> {
     pub fn new(x509_certificates: Vec<X509Certificate<'a>>) -> Self {
-        Parser { x509_certificates }
+        Parser {
+            x509_certificates,
+            oid_registry: OidRegistry::default().with_all_crypto().with_x509(),
+        }
     }
 
     pub fn parse_certificates(&self) -> Result<Vec<Certificate>, Box<dyn std::error::Error>> {
@@ -43,6 +48,9 @@ impl<'a> Parser<'a> {
 
             let serial_number = x509_cert.raw_serial_as_string();
 
+            let signature_algorithm =
+                format_oid(&x509_cert.signature_algorithm.algorithm, &self.oid_registry);
+
             let certificate = Certificate {
                 subject,
                 issuer,
@@ -51,6 +59,7 @@ impl<'a> Parser<'a> {
                 basic_constraints,
                 key_usage,
                 serial_number,
+                signature_algorithm,
             };
             certificates.push(certificate);
         }
