@@ -7,4 +7,5 @@ pub struct Certificate {
     pub key_usage: String,
     pub serial_number: String,
     pub signature_algorithm: String,
+    pub public_key_and_algorithm: String,
 }

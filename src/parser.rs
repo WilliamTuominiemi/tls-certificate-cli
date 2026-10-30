@@ -3,7 +3,9 @@ use crate::certificate::Certificate;
 use chrono::{DateTime, Utc};
 use x509_parser::certificate::{Validity, X509Certificate};
 use x509_parser::oid_registry::{OidRegistry, format_oid};
+use x509_parser::public_key::PublicKey;
 use x509_parser::time::ASN1Time;
+use x509_parser::x509::SubjectPublicKeyInfo;
 
 pub struct Parser<'a> {
     x509_certificates: Vec<X509Certificate<'a>>,
@@ -51,6 +53,9 @@ impl<'a> Parser<'a> {
             let signature_algorithm =
                 format_oid(&x509_cert.signature_algorithm.algorithm, &self.oid_registry);
 
+            let public_key_and_algorithm =
+                self.parse_public_key_and_algorithm(x509_cert.public_key());
+
             let certificate = Certificate {
                 subject,
                 issuer,
@@ -60,6 +65,7 @@ impl<'a> Parser<'a> {
                 key_usage,
                 serial_number,
                 signature_algorithm,
+                public_key_and_algorithm,
             };
             certificates.push(certificate);
         }
@@ -127,6 +133,33 @@ impl<'a> Parser<'a> {
         );
         s
     }
+
+    fn parse_public_key_and_algorithm(
+        &self,
+        subject_public_key_info: &SubjectPublicKeyInfo,
+    ) -> String {
+        let algorithm = format_oid(
+            &subject_public_key_info.algorithm.algorithm,
+            &self.oid_registry,
+        );
+
+        let key_description = match subject_public_key_info.parsed() {
+            Ok(PublicKey::RSA(rsa)) => format!(
+                "RSA {} bits, exponent {}",
+                rsa.key_size(),
+                rsa.try_exponent()
+                    .map(|e| e.to_string())
+                    .unwrap_or_default()
+            ),
+            Ok(PublicKey::EC(point)) => format!("EC {} bits", point.key_size()),
+            Ok(PublicKey::DSA(y)) => format!("DSA {} bytes", y.len()),
+            Ok(other) => format!("{:?}", other),
+            Err(e) => format!("unparseable key: {}", e),
+        };
+
+        let s = format!("{} ({})", algorithm, key_description);
+        s
+    }
 }
 
 #[cfg(test)]
@@ -134,7 +167,12 @@ mod tests {
     use std::assert_eq;
 
     use super::*;
-    use x509_parser::extensions::{BasicConstraints, GeneralName, SubjectAlternativeName};
+    use x509_parser::oid_registry::OID_PKCS1_SHA256WITHRSA;
+    use x509_parser::oid_registry::asn1_rs::BitString;
+    use x509_parser::{
+        extensions::{BasicConstraints, GeneralName, SubjectAlternativeName},
+        x509::{AlgorithmIdentifier, SubjectPublicKeyInfo},
+    };
 
     #[test]
     fn test_parse_basic_constraints_with_ca_true_and_path_length() {
@@ -222,5 +260,29 @@ mod tests {
         let output = parser.parse_validity_period(&validity, mock_current_time);
 
         assert_eq!(output, "14/11/2023 - 15/01/2027 (Expired)");
+    }
+
+    #[test]
+    fn test_parse_public_key_and_algorithm() {
+        let parser = Parser::new(vec![]);
+
+        let key_bytes: &[u8] = &[0x04, 0x01, 0x02, 0x03];
+        let algorithm = AlgorithmIdentifier {
+            algorithm: OID_PKCS1_SHA256WITHRSA,
+            parameters: None,
+        };
+
+        let subject_public_key_info: SubjectPublicKeyInfo<'_> = SubjectPublicKeyInfo {
+            algorithm,
+            subject_public_key: BitString::new(0, key_bytes),
+            raw: &[],
+        };
+
+        let output = parser.parse_public_key_and_algorithm(&subject_public_key_info);
+
+        assert_eq!(
+            output,
+            "sha256WithRSAEncryption (1.2.840.113549.1.1.11) (Unknown([4, 1, 2, 3]))"
+        )
     }
 }
