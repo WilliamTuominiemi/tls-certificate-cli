@@ -41,6 +41,8 @@ impl<'a> Parser<'a> {
                 .map(|extension| *extension.value)
                 .map_or_else(|| "".to_string(), |k_u| format!("Key usage: {}", k_u));
 
+            let serial_number = x509_cert.raw_serial_as_string();
+
             let certificate = Certificate {
                 subject,
                 issuer,
@@ -48,6 +50,7 @@ impl<'a> Parser<'a> {
                 subject_alternative_name,
                 basic_constraints,
                 key_usage,
+                serial_number,
             };
             certificates.push(certificate);
         }

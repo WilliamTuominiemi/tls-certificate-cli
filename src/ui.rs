@@ -163,8 +163,9 @@ impl Ui {
             Line::from(format!("Subject: {}", certificate.subject)),
             Line::from(format!("Issuer: {}", certificate.issuer)),
             Line::from(format!("Validity period: {}", certificate.validity_period)),
-            Line::from(certificate.basic_constraints.to_string()),
-            Line::from(certificate.key_usage.to_string()),
+            Line::from(certificate.basic_constraints.clone()),
+            Line::from(certificate.key_usage.clone()),
+            Line::from(format!("Serial: {}", certificate.serial_number.clone())),
         ];
 
         if let Some(subject_alternative_name) = &certificate.subject_alternative_name {
