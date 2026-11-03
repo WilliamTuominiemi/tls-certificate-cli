@@ -47,7 +47,7 @@ impl<'a> Parser<'a> {
             let key_usage = x509_cert
                 .key_usage()?
                 .map(|extension| *extension.value)
-                .map_or_else(|| "".to_string(), |k_u| format!("Key usage: {}", k_u));
+                .map_or_else(|| "".to_string(), |k_u| k_u.to_string());
 
             let extended_key_usage = x509_cert
                 .extended_key_usage()?
@@ -98,9 +98,9 @@ impl<'a> Parser<'a> {
                     Some(len) => len.to_string(),
                     None => "unlimited".to_string(),
                 };
-                format!("CA: true, Path length: {}", path_len).to_string()
+                format!("true, Path length: {}", path_len).to_string()
             } else {
-                "CA: false".to_string()
+                "false".to_string()
             }
         } else {
             "BasicConstraints not found".to_string()
