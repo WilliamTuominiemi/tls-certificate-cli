@@ -2,6 +2,7 @@ use crate::certificate::Certificate;
 
 use chrono::{DateTime, Utc};
 use x509_parser::certificate::{Validity, X509Certificate};
+use x509_parser::extensions::ExtendedKeyUsage;
 use x509_parser::oid_registry::{OidRegistry, format_oid};
 use x509_parser::public_key::PublicKey;
 use x509_parser::time::ASN1Time;
@@ -48,6 +49,14 @@ impl<'a> Parser<'a> {
                 .map(|extension| *extension.value)
                 .map_or_else(|| "".to_string(), |k_u| format!("Key usage: {}", k_u));
 
+            let extended_key_usage = x509_cert
+                .extended_key_usage()?
+                .map(|extension| extension.value)
+                .map_or_else(
+                    || "".to_string(),
+                    |e_k_u| self.parse_extended_key_usage(e_k_u),
+                );
+
             let serial_number = x509_cert.raw_serial_as_string();
 
             let signature_algorithm =
@@ -63,6 +72,7 @@ impl<'a> Parser<'a> {
                 subject_alternative_name,
                 basic_constraints,
                 key_usage,
+                extended_key_usage,
                 serial_number,
                 signature_algorithm,
                 public_key_and_algorithm,
@@ -159,6 +169,38 @@ impl<'a> Parser<'a> {
 
         let s = format!("{} ({})", algorithm, key_description);
         s
+    }
+
+    fn parse_extended_key_usage(&self, extended_key_usage: &ExtendedKeyUsage) -> String {
+        let mut usages = Vec::new();
+
+        if extended_key_usage.server_auth {
+            usages.push("TLS Web Server Authentication".to_string());
+        }
+        if extended_key_usage.client_auth {
+            usages.push("TLS Web Client Authentication".to_string());
+        }
+        if extended_key_usage.code_signing {
+            usages.push("Code Signing".to_string());
+        }
+        if extended_key_usage.email_protection {
+            usages.push("E-mail Protection".to_string());
+        }
+        if extended_key_usage.time_stamping {
+            usages.push("Time Stamping".to_string());
+        }
+        if extended_key_usage.ocsp_signing {
+            usages.push("OCSP Signing".to_string());
+        }
+        if extended_key_usage.any {
+            usages.push("Any Extended Key Usage".to_string());
+        }
+
+        for oid in &extended_key_usage.other {
+            usages.push(format!("OID({})", oid));
+        }
+
+        usages.join(", ")
     }
 }
 
@@ -283,6 +325,29 @@ mod tests {
         assert_eq!(
             output,
             "sha256WithRSAEncryption (1.2.840.113549.1.1.11) (Unknown([4, 1, 2, 3]))"
+        )
+    }
+
+    #[test]
+    fn test_parse_extended_key_usage() {
+        let parser = Parser::new(vec![]);
+
+        let extended_key_usage = ExtendedKeyUsage {
+            any: false,
+            server_auth: true,
+            client_auth: false,
+            code_signing: true,
+            email_protection: false,
+            time_stamping: true,
+            ocsp_signing: false,
+            other: vec![],
+        };
+
+        let output = parser.parse_extended_key_usage(&extended_key_usage);
+
+        assert_eq!(
+            output,
+            "TLS Web Server Authentication, Code Signing, Time Stamping"
         )
     }
 }

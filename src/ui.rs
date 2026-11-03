@@ -165,6 +165,10 @@ impl Ui {
             Line::from(format!("Validity period: {}", certificate.validity_period)),
             Line::from(certificate.basic_constraints.clone()),
             Line::from(certificate.key_usage.clone()),
+            Line::from(format!(
+                "Extended key usage: {}",
+                certificate.extended_key_usage
+            )),
             Line::from(format!("Serial: {}", certificate.serial_number)),
             Line::from(format!(
                 "Signature algorithm: {}",

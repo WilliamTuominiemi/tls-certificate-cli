@@ -5,6 +5,7 @@ pub struct Certificate {
     pub subject_alternative_name: Option<String>,
     pub basic_constraints: String,
     pub key_usage: String,
+    pub extended_key_usage: String,
     pub serial_number: String,
     pub signature_algorithm: String,
     pub public_key_and_algorithm: String,
