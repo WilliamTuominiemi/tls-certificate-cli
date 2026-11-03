@@ -163,8 +163,8 @@ impl Ui {
             Line::from(format!("Subject: {}", certificate.subject)),
             Line::from(format!("Issuer: {}", certificate.issuer)),
             Line::from(format!("Validity period: {}", certificate.validity_period)),
-            Line::from(certificate.basic_constraints.clone()),
-            Line::from(certificate.key_usage.clone()),
+            Line::from(format!("CA: {}", certificate.basic_constraints)),
+            Line::from(format!("Key usage: {}", certificate.key_usage)),
             Line::from(format!(
                 "Extended key usage: {}",
                 certificate.extended_key_usage
