@@ -227,7 +227,7 @@ mod tests {
 
         let output = parser.parse_basic_constraints(Some(basic_constraints));
 
-        assert_eq!(output, "CA: true, Path length: 2")
+        assert_eq!(output, "true, Path length: 2")
     }
 
     #[test]
@@ -241,7 +241,7 @@ mod tests {
 
         let output = parser.parse_basic_constraints(Some(basic_constraints));
 
-        assert_eq!(output, "CA: false")
+        assert_eq!(output, "false")
     }
 
     #[test]
