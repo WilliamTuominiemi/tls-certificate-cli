@@ -1,6 +1,6 @@
 use ratatui::layout::{Constraint, Margin, Offset, Rect};
-use ratatui::style::Style;
-use ratatui::text::Line;
+use ratatui::style::{Color, Modifier, Style};
+use ratatui::text::{Line, Span};
 use ratatui::widgets::{
     Block, BorderType, Clear, Padding, Paragraph, Scrollbar, ScrollbarOrientation, ScrollbarState,
     Tabs, Wrap,
@@ -157,45 +157,64 @@ impl Ui {
         frame.render_widget(paragraph, centered_area);
     }
 
-    fn build_text(&self) -> Vec<Line<'static>> {
-        let certificate = &self.certificates[self.selected_tab];
-        let mut text = vec![
-            Line::from(format!("Subject: {}", certificate.subject)),
-            Line::from(format!("Issuer: {}", certificate.issuer)),
-            Line::from(format!("Validity period: {}", certificate.validity_period)),
-            Line::from(format!(
-                "Public key & Algorithm: {}",
-                certificate.public_key_and_algorithm
-            )),
-            Line::from(format!(
-                "Signature algorithm: {}",
-                certificate.signature_algorithm
-            )),
-            Line::from(format!("Serial: {}", certificate.serial_number)),
-            Line::from(format!(
-                "Subject Key Identifier: {}",
-                certificate.key_identifiers.ski
-            )),
-            Line::from(format!(
-                "Authority Key Identifier: {}",
-                certificate.key_identifiers.aki
-            )),
-            Line::from(format!("CA: {}", certificate.basic_constraints)),
-            Line::from(format!("Key usage: {}", certificate.key_usage)),
-            Line::from(format!(
-                "Extended key usage: {}",
-                certificate.extended_key_usage
-            )),
-            Line::from(format!(
-                "SHA-256 fingerprint: {}",
-                certificate.fingerprint.certificate_fingerprint
-            )),
-            Line::from(format!("SPKI pin: {}", certificate.fingerprint.spki_pin)),
-        ];
+    fn heading(&self, title: &str) -> Line<'static> {
+        Line::from(Span::styled(
+            title.to_string(),
+            Style::default()
+                .fg(Color::Cyan)
+                .add_modifier(Modifier::BOLD),
+        ))
+    }
 
-        if let Some(subject_alternative_name) = &certificate.subject_alternative_name {
-            text.push(Line::from(subject_alternative_name.to_string()));
+    fn field(&self, label: &str, value: impl Into<String>) -> Line<'static> {
+        Line::from(vec![
+            Span::styled(
+                format!("{label}: "),
+                Style::default().add_modifier(Modifier::BOLD),
+            ),
+            Span::raw(value.into()),
+        ])
+    }
+
+    fn build_text(&self) -> Vec<Line<'static>> {
+        let c = &self.certificates[self.selected_tab];
+        let mut text = Vec::new();
+
+        text.push(self.heading("Identity"));
+        text.push(self.field("Subject", &c.subject));
+        if let Some(san) = &c.subject_alternative_name {
+            text.push(self.field("SAN", san.to_string()));
         }
+        text.push(self.field("Issuer", &c.issuer));
+        text.push(Line::default());
+
+        text.push(self.heading("Validity"));
+        text.push(self.field("Period", &c.validity_period));
+        text.push(Line::default());
+
+        text.push(self.heading("Key & Signature"));
+        text.push(self.field("Public key", &c.public_key_and_algorithm));
+        text.push(self.field("Signature algorithm", &c.signature_algorithm));
+        text.push(Line::default());
+
+        text.push(self.heading("Identifiers"));
+        text.push(self.field("Serial", &c.serial_number));
+        text.push(self.field("Subject Key Identifier", &c.key_identifiers.ski));
+        text.push(self.field("Authority Key Identifier", &c.key_identifiers.aki));
+        text.push(Line::default());
+
+        text.push(self.heading("Usage"));
+        text.push(self.field("CA", &c.basic_constraints));
+        text.push(self.field("Key usage", &c.key_usage));
+        text.push(self.field("Extended key usage", &c.extended_key_usage));
+        text.push(Line::default());
+
+        text.push(self.heading("Fingerprints"));
+        text.push(self.field(
+            "SHA-256 (certificate)",
+            &c.fingerprint.certificate_fingerprint,
+        ));
+        text.push(self.field("SPKI pin (SHA-256, base64)", &c.fingerprint.spki_pin));
 
         text
     }
