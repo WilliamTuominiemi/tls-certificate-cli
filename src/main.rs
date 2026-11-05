@@ -1,4 +1,4 @@
-use rustls::pki_types::ServerName;
+use rustls::pki_types::{CertificateDer, ServerName};
 use rustls::{ClientConnection, StreamOwned};
 use std::io::Write;
 use std::net::TcpStream;
@@ -47,13 +47,15 @@ fn set_up_connection(host: &str) -> Result<ClientConnection, Box<dyn std::error:
     Ok(ClientConnection::new(Arc::new(config), server_name)?)
 }
 
-fn get_certificates<'a>(tls_connection: &'a ClientConnection) -> Vec<X509Certificate<'a>> {
-    let mut x509_certificates: Vec<X509Certificate<'_>> = vec![];
+fn get_certificates<'a>(
+    tls_connection: &'a ClientConnection,
+) -> Vec<(X509Certificate<'a>, CertificateDer<'a>)> {
+    let mut x509_certificates: Vec<(X509Certificate<'a>, CertificateDer<'a>)> = vec![];
     if let Some(certificates) = tls_connection.peer_certificates() {
         for der in certificates {
             let res: (&[u8], X509Certificate<'_>) = X509Certificate::from_der(der).unwrap();
             let cert: X509Certificate<'_> = res.1;
-            x509_certificates.push(cert);
+            x509_certificates.push((cert, der.clone()));
         }
     }
 

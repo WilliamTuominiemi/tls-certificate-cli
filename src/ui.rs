@@ -186,6 +186,11 @@ impl Ui {
                 "Extended key usage: {}",
                 certificate.extended_key_usage
             )),
+            Line::from(format!(
+                "SHA-256 fingerprint: {}",
+                certificate.fingerprint.certificate_fingerprint
+            )),
+            Line::from(format!("SPKI pin: {}", certificate.fingerprint.spki_pin)),
         ];
 
         if let Some(subject_alternative_name) = &certificate.subject_alternative_name {

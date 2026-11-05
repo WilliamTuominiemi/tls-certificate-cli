@@ -1,6 +1,9 @@
-use crate::certificate::{Certificate, KeyIdentifiers};
+use crate::certificate::{Certificate, Fingerprint, KeyIdentifiers};
 
+use base64::{Engine as _, engine::general_purpose::STANDARD as BASE64};
 use chrono::{DateTime, Utc};
+use rustls::pki_types::CertificateDer;
+use sha2::{Digest, Sha256};
 use x509_parser::certificate::{Validity, X509Certificate};
 use x509_parser::extensions::{ExtendedKeyUsage, ParsedExtension};
 use x509_parser::oid_registry::{OidRegistry, format_oid};
@@ -9,12 +12,12 @@ use x509_parser::time::ASN1Time;
 use x509_parser::x509::SubjectPublicKeyInfo;
 
 pub struct Parser<'a> {
-    x509_certificates: Vec<X509Certificate<'a>>,
+    x509_certificates: Vec<(X509Certificate<'a>, CertificateDer<'a>)>,
     oid_registry: OidRegistry<'a>,
 }
 
 impl<'a> Parser<'a> {
-    pub fn new(x509_certificates: Vec<X509Certificate<'a>>) -> Self {
+    pub fn new(x509_certificates: Vec<(X509Certificate<'a>, CertificateDer<'a>)>) -> Self {
         Parser {
             x509_certificates,
             oid_registry: OidRegistry::default().with_all_crypto().with_x509(),
@@ -24,7 +27,10 @@ impl<'a> Parser<'a> {
     pub fn parse_certificates(&self) -> Result<Vec<Certificate>, Box<dyn std::error::Error>> {
         let mut certificates = Vec::new();
 
-        for x509_cert in &self.x509_certificates {
+        for x509_certificate in &self.x509_certificates {
+            let x509_cert = &x509_certificate.0;
+            let x509_der = &x509_certificate.1;
+
             let subject = x509_cert.subject().to_string();
 
             let issuer = x509_cert.issuer().to_string();
@@ -67,6 +73,8 @@ impl<'a> Parser<'a> {
 
             let key_identifiers = self.parse_key_identifiers(x509_cert);
 
+            let fingerprint = self.parse_fingerprint(x509_cert, x509_der);
+
             let certificate = Certificate {
                 subject,
                 issuer,
@@ -79,6 +87,7 @@ impl<'a> Parser<'a> {
                 signature_algorithm,
                 public_key_and_algorithm,
                 key_identifiers,
+                fingerprint,
             };
             certificates.push(certificate);
         }
@@ -236,6 +245,20 @@ impl<'a> Parser<'a> {
             .map(|b| format!("{:02x}", b))
             .collect::<Vec<_>>()
             .join(":")
+    }
+
+    fn parse_fingerprint(&self, cert: &X509Certificate, der: &CertificateDer) -> Fingerprint {
+        let cert_hash = Sha256::digest(der);
+        let cert_fp_hex = self.format_colon_hex(&cert_hash);
+
+        let spki_bytes = cert.public_key().raw;
+        let spki_hash = Sha256::digest(spki_bytes);
+        let spki_fp_b64 = BASE64.encode(spki_hash);
+
+        Fingerprint {
+            certificate_fingerprint: cert_fp_hex,
+            spki_pin: spki_fp_b64,
+        }
     }
 }
 

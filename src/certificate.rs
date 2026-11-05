@@ -10,9 +10,15 @@ pub struct Certificate {
     pub signature_algorithm: String,
     pub public_key_and_algorithm: String,
     pub key_identifiers: KeyIdentifiers,
+    pub fingerprint: Fingerprint,
 }
 
 pub struct KeyIdentifiers {
     pub ski: String,
     pub aki: String,
+}
+
+pub struct Fingerprint {
+    pub certificate_fingerprint: String,
+    pub spki_pin: String,
 }
