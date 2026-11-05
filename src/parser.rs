@@ -1,8 +1,8 @@
-use crate::certificate::Certificate;
+use crate::certificate::{Certificate, KeyIdentifiers};
 
 use chrono::{DateTime, Utc};
 use x509_parser::certificate::{Validity, X509Certificate};
-use x509_parser::extensions::ExtendedKeyUsage;
+use x509_parser::extensions::{ExtendedKeyUsage, ParsedExtension};
 use x509_parser::oid_registry::{OidRegistry, format_oid};
 use x509_parser::public_key::PublicKey;
 use x509_parser::time::ASN1Time;
@@ -65,6 +65,8 @@ impl<'a> Parser<'a> {
             let public_key_and_algorithm =
                 self.parse_public_key_and_algorithm(x509_cert.public_key());
 
+            let key_identifiers = self.parse_key_identifiers(x509_cert);
+
             let certificate = Certificate {
                 subject,
                 issuer,
@@ -76,6 +78,7 @@ impl<'a> Parser<'a> {
                 serial_number,
                 signature_algorithm,
                 public_key_and_algorithm,
+                key_identifiers,
             };
             certificates.push(certificate);
         }
@@ -201,6 +204,38 @@ impl<'a> Parser<'a> {
         }
 
         usages.join(", ")
+    }
+
+    fn parse_key_identifiers(&self, cert: &X509Certificate) -> KeyIdentifiers {
+        let mut ski = None;
+        let mut aki = None;
+
+        for ext in cert.extensions() {
+            match ext.parsed_extension() {
+                ParsedExtension::SubjectKeyIdentifier(key_id) => {
+                    ski = Some(self.format_colon_hex(key_id.0));
+                }
+                ParsedExtension::AuthorityKeyIdentifier(auth_key_id) => {
+                    if let Some(key_id) = &auth_key_id.key_identifier {
+                        aki = Some(self.format_colon_hex(key_id.0));
+                    }
+                }
+                _ => {}
+            }
+        }
+
+        KeyIdentifiers {
+            ski: ski.unwrap_or("Not found".to_string()),
+            aki: aki.unwrap_or("Not found".to_string()),
+        }
+    }
+
+    fn format_colon_hex(&self, bytes: &[u8]) -> String {
+        bytes
+            .iter()
+            .map(|b| format!("{:02x}", b))
+            .collect::<Vec<_>>()
+            .join(":")
     }
 }
 

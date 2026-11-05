@@ -178,6 +178,14 @@ impl Ui {
                 "Public key & Algorithm: {}",
                 certificate.public_key_and_algorithm
             )),
+            Line::from(format!(
+                "Subject Key Identifier: {}",
+                certificate.key_identifiers.ski
+            )),
+            Line::from(format!(
+                "Authority Key Identifier: {}",
+                certificate.key_identifiers.aki
+            )),
         ];
 
         if let Some(subject_alternative_name) = &certificate.subject_alternative_name {
