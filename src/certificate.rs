@@ -9,4 +9,10 @@ pub struct Certificate {
     pub serial_number: String,
     pub signature_algorithm: String,
     pub public_key_and_algorithm: String,
+    pub key_identifiers: KeyIdentifiers,
+}
+
+pub struct KeyIdentifiers {
+    pub ski: String,
+    pub aki: String,
 }
