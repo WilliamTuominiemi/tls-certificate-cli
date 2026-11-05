@@ -163,21 +163,15 @@ impl Ui {
             Line::from(format!("Subject: {}", certificate.subject)),
             Line::from(format!("Issuer: {}", certificate.issuer)),
             Line::from(format!("Validity period: {}", certificate.validity_period)),
-            Line::from(format!("CA: {}", certificate.basic_constraints)),
-            Line::from(format!("Key usage: {}", certificate.key_usage)),
-            Line::from(format!(
-                "Extended key usage: {}",
-                certificate.extended_key_usage
-            )),
-            Line::from(format!("Serial: {}", certificate.serial_number)),
-            Line::from(format!(
-                "Signature algorithm: {}",
-                certificate.signature_algorithm
-            )),
             Line::from(format!(
                 "Public key & Algorithm: {}",
                 certificate.public_key_and_algorithm
             )),
+            Line::from(format!(
+                "Signature algorithm: {}",
+                certificate.signature_algorithm
+            )),
+            Line::from(format!("Serial: {}", certificate.serial_number)),
             Line::from(format!(
                 "Subject Key Identifier: {}",
                 certificate.key_identifiers.ski
@@ -185,6 +179,12 @@ impl Ui {
             Line::from(format!(
                 "Authority Key Identifier: {}",
                 certificate.key_identifiers.aki
+            )),
+            Line::from(format!("CA: {}", certificate.basic_constraints)),
+            Line::from(format!("Key usage: {}", certificate.key_usage)),
+            Line::from(format!(
+                "Extended key usage: {}",
+                certificate.extended_key_usage
             )),
         ];
 
